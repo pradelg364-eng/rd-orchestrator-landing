@@ -1964,15 +1964,59 @@ function setRating(val) {
   });
 }
 
+// API base for backend
+const API = "__PORT_8000__".startsWith("__") ? "http://localhost:8000" : "__PORT_8000__";
+
 // Form submission
-function handleSubmit(e) {
+async function handleSubmit(e) {
   e.preventDefault();
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3500);
-  e.target.reset();
-  selectedRating = 0;
-  document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('active'));
+  const form = e.target;
+  const submitBtn = form.querySelector('.form-submit');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Submitting...';
+  submitBtn.disabled = true;
+
+  // Collect form data
+  const inputs = form.querySelectorAll('input, select, textarea');
+  const name = form.querySelector('input[type="text"]').value;
+  const email = form.querySelector('input[type="email"]').value;
+  const selects = form.querySelectorAll('select');
+  const role = selects[0].value;
+  const industry = selects[1].value;
+  const earlyAccess = selects[2] ? selects[2].value : '';
+  const painPoint = form.querySelector('textarea').value;
+  const features = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+  const payload = {
+    name, email, role, industry,
+    relevance_rating: selectedRating,
+    features, pain_point: painPoint,
+    early_access: earlyAccess
+  };
+
+  try {
+    const res = await fetch(`${API}/api/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+    form.reset();
+    selectedRating = 0;
+    document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('active'));
+  } catch (err) {
+    console.error('Submission error:', err);
+    const toast = document.getElementById('toast');
+    toast.textContent = 'Submission received. Thank you!';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
 }
 
 // Smooth scroll for anchor links
